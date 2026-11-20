@@ -1,6 +1,5 @@
 /**
- * Helpers for resilient Server-Sent-Events (SSE) streaming of long-running LLM jobs
- * over a serverless proxy that idles out connections after ~60s of silence.
+ * Helpers for Server-Sent-Events (SSE) streaming, keepalives and inactivity tracking.
  */
 
 /** True once the stream controller has been closed (client disconnected / aborted). */
@@ -10,7 +9,7 @@ export function makeClosedGuard(controller: ReadableStreamDefaultController): ()
 
 /**
  * Returns a function that encodes and enqueues an SSE `data:` frame.
- * No-ops once the controller is closed, so a late write never throws.
+ * Checks for a closed controller before enqueueing. Callers own lifecycle races and serializable values.
  */
 export function makeSseSender(
   controller: ReadableStreamDefaultController,
@@ -23,8 +22,8 @@ export function makeSseSender(
 }
 
 /**
- * Emit an SSE comment (`:keepalive`) every `intervalMs` so proxies don't close an
- * idle connection while the model is still "thinking". Returns a stop function.
+ * Emit an SSE comment (`:keepalive`) every `intervalMs`. Intermediary timeout policies
+ * still apply. Returns a stop function, which callers should invoke on completion.
  */
 export function startKeepalive(
   controller: ReadableStreamDefaultController,

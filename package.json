@@ -1,7 +1,7 @@
 {
   "name": "resilient-llm-stream",
   "version": "0.1.0",
-  "description": "Production-grade resilience for streaming LLM calls: timeout + exponential-backoff retry, SSE keepalive + inactivity watchdog, and a string-literal-aware streaming JSON extractor. Zero dependencies.",
+  "description": "Composable TypeScript helpers for retries, SSE keepalives, inactivity monitoring and streamed JSON extraction. Maintained by the developer of Quanta Study.",
   "keywords": [
     "llm",
     "streaming",
@@ -23,20 +23,37 @@
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "exports": {
-    ".": { "types": "./dist/index.d.ts", "import": "./dist/index.js" }
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
   },
-  "files": ["dist", "README.md", "LICENSE"],
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
   "sideEffects": false,
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "test": "npm run build && node --test",
     "prepublishOnly": "npm run build"
   },
-  "engines": { "node": ">=18" },
+  "engines": {
+    "node": ">=18"
+  },
   "author": "Amos Matzke <amos@am-creativetech.com> (https://quanta-study.de)",
   "license": "MIT",
-  "repository": { "type": "git", "url": "git+https://github.com/ammmcreativetech-dot/resilient-llm-stream.git" },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ammmcreativetech-dot/resilient-llm-stream.git"
+  },
   "homepage": "https://github.com/ammmcreativetech-dot/resilient-llm-stream#readme",
-  "bugs": { "url": "https://github.com/ammmcreativetech-dot/resilient-llm-stream/issues" },
-  "devDependencies": { "typescript": "^5.7.0" }
+  "bugs": {
+    "url": "https://github.com/ammmcreativetech-dot/resilient-llm-stream/issues"
+  },
+  "devDependencies": {
+    "typescript": "^5.7.0"
+  },
+  "private": true
 }

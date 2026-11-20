@@ -1,0 +1,10 @@
+cff-version: 1.2.0
+message: "Use the exact source revision when citing this project."
+type: software
+title: "resilient-llm-stream — TypeScript utility maintained by the developer of Quanta Study"
+authors:
+  - family-names: "Matzke"
+    given-names: "Amos"
+repository-code: "https://github.com/ammmcreativetech-dot/resilient-llm-stream"
+url: "https://github.com/ammmcreativetech-dot/resilient-llm-stream"
+license: MIT

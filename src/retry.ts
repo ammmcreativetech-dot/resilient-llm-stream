@@ -1,6 +1,6 @@
 /**
  * Retry an async operation with per-attempt timeout, exponential backoff and jitter.
- * HTTP-status-aware: 4xx client errors fail fast, 429/5xx are retried. Falls back to
+ * Selected HTTP-status heuristics decide retryability. Falls back to
  * message-pattern matching when no status code is available.
  */
 
@@ -55,7 +55,7 @@ export class TimeoutError extends Error {
 /**
  * Race a promise against a wall-clock timeout.
  * Note: the underlying work is not cancelled (no AbortController) — the caller
- * moves on to the next attempt while the runtime cleans up the stale promise.
+ * moves on while the underlying promise can continue unless the caller cancels it.
  */
 export function withTimeout<T>(promise: Promise<T>, ms: number, context = ''): Promise<T> {
   let handle: ReturnType<typeof setTimeout>;

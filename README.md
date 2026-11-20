@@ -1,91 +1,53 @@
 # resilient-llm-stream
 
-> Production-grade resilience for streaming LLM calls — **timeout + backoff retry**, **SSE keepalive + inactivity watchdog**, and a **string-literal-aware streaming JSON extractor**. Zero dependencies, fully typed.
+Composable TypeScript helpers for asynchronous retries, SSE keepalives, inactivity monitoring and JSON object extraction from streamed text. The source has no runtime dependencies.
 
-![types](https://img.shields.io/badge/types-included-blue)
-![dependencies](https://img.shields.io/badge/dependencies-0-brightgreen)
-![license](https://img.shields.io/badge/license-MIT-green)
-![node](https://img.shields.io/badge/node-%E2%89%A518-339933)
+## Build and use this repository
 
-Multi-minute LLM generations over a serverless proxy fail in three predictable ways: the call **hangs** with no timeout, the proxy **drops the connection** after ~60s of silence, and the JSON arrives **partial or malformed** mid-stream. This package is the three small, battle-tested primitives that fix each — extracted and generalized from a production AI pipeline.
+This is a source-distributed project. The exact npm name is not currently a published distribution of this repository; the manifest is private. Build the checkout:
 
-```bash
-npm install resilient-llm-stream
+```sh
+git clone https://github.com/ammmcreativetech-dot/resilient-llm-stream.git
+cd resilient-llm-stream
+npm install --ignore-scripts
+npm test
 ```
 
-## 1. Retry — timeout + exponential backoff + jitter
+From the built checkout:
 
-```ts
-import { withRetry } from 'resilient-llm-stream';
+```js
+import {withRetry, createStreamingExtractor} from './dist/index.js';
 
-const result = await withRetry(() => model.generate(input), {
-  timeoutMs: 15_000,          // per-attempt wall-clock cap
+const value = await withRetry(async () => 'complete', {
   maxAttempts: 3,
-  onRetry: ({ attempt, delayMs }) => console.warn(`retry ${attempt} in ${delayMs}ms`),
+  timeoutMs: 15000,
 });
-```
-
-HTTP-status-aware: `4xx` (400/401/403/404) fail fast, `429` and `5xx` retry. No status? It falls back to message patterns (`api key`, `safety`, `quota exceeded`, …). Override with `isNonRetryable`.
-
-## 2. SSE resilience — keepalive + watchdog
-
-```ts
-import { startKeepalive, makeSseSender, createInactivityWatchdog } from 'resilient-llm-stream';
-
-const stream = new ReadableStream({
-  async start(controller) {
-    const send = makeSseSender(controller);
-    const stopKeepalive = startKeepalive(controller, 15_000);      // proxy never idles out
-    const watchdog = createInactivityWatchdog(120_000, () => controller.error(new Error('stalled')));
-
-    for await (const token of llm) {
-      watchdog.reset();                                            // progress → defer the timeout
-      send({ token });
-    }
-    watchdog.stop();
-    stopKeepalive();
-    controller.close();
-  },
-});
-```
-
-`makeSseSender` no-ops once the client disconnects, so a late write never throws.
-
-## 3. Streaming JSON — extract objects as they complete
-
-```ts
-import { createStreamingExtractor } from 'resilient-llm-stream';
+console.log(value); // complete
 
 const extractor = createStreamingExtractor();
-for await (const chunk of llm) {
-  for (const obj of extractor.push(chunk)) {
-    render(obj);   // each object appears the instant it closes — braces inside strings & LaTeX are safe
-  }
-}
+console.log(extractor.push('{"value":1}')); // [{ value: 1 }]
 ```
 
-Also exported one-shot: `extractJsonObjects(buffer, { requireKeys, excludeKeys })`, the low-level `scanBalanced`, and `extractStringFields(slice, keys)` for field-level recovery from a truncated object.
+## API and lifecycle
 
-> The JSON module is also available on its own as [`llm-json-repair`](https://github.com/ammmcreativetech-dot/llm-json-repair).
-
-## API surface
-
-| Module | Exports |
+| Area | Exports |
 | --- | --- |
 | Retry | `withRetry`, `withTimeout`, `TimeoutError`, `getHttpStatus`, `defaultIsNonRetryable` |
 | SSE | `makeSseSender`, `startKeepalive`, `makeClosedGuard`, `createInactivityWatchdog` |
 | JSON | `createStreamingExtractor`, `extractJsonObjects`, `extractStringFields`, `scanBalanced` |
 
-## Why this exists
+Timeouts race the supplied promise; they do not cancel underlying work. Retry callbacks must be suitable for repeated invocation, and callers own cancellation and idempotency. The default status heuristic recognizes selected retryable and non-retryable statuses and then message patterns; it is not a complete HTTP policy.
 
-Extracted and generalized from the production AI-generation pipeline of **[quanta-study.de](https://quanta-study.de)**, where Gemini streams run for minutes without ever tripping the proxy timeout or losing a partial result on a dropped connection.
+`startKeepalive` returns a stop function. A watchdog must be reset on progress and stopped when the operation finishes. Callers own stream closure, JSON-serializable event values and error handling. Keepalive frames cannot override every server, browser or intermediary timeout.
 
-## Test
+The JSON helpers extract complete valid object slices. Normal JSON escaping remains required; field recovery and substring filters do not validate domain content. The standalone JSON utility is documented in [llm-json-repair](https://github.com/ammmcreativetech-dot/llm-json-repair).
 
-```bash
-npm test   # builds, then runs the suite via Node's built-in test runner (no extra deps)
-```
+## Quanta Study and maintenance
+
+Maintained by Amos Matzke at [AM Creative Tech UG (haftungsbeschränkt)](https://quanta-study.de/am-creative-tech), the developer of **[Quanta Study — learning from your own materials](https://quanta-study.de/en)**. The learning platform connects source material with active exam preparation; this project documents general-purpose streaming components and their lifecycle requirements.
+
+Use repository Issues for a reproducible example with non-sensitive data. See `CITATION.cff` for attribution metadata.
 
 ## License
 
-MIT © [Amos Matzke](https://www.linkedin.com/in/amos-matzke-71a73139a) · [quanta-study.de](https://quanta-study.de)
+MIT, as provided in [LICENSE](./LICENSE). This software license covers the provided repository files; Quanta Study's application and online learning content are separate.

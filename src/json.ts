@@ -1,5 +1,5 @@
 /**
- * Extract complete JSON objects from a partial / streaming / malformed buffer.
+ * Extract complete valid JSON object slices from partial or streamed text.
  * String-literal-aware: braces inside string literals (LaTeX, sets, code) never
  * corrupt the brace-depth scan the way a naive regex would.
  */
